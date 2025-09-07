@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Salon Appointment Tracker - Owner</title>
+  <style>
+:root { --bg: #0b0f15; --card: #121826; --muted: #a3b3c7; --text: #e7edf5; --accent: #4fd1c5; --accent2: #7aa2f7; --danger: #ef4444; --ok: #22c55e; --waiting: #f59e0b; --in-service: #8b5cf6; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background: linear-gradient(180deg, #0b0f15 0%, #0e1420 100%); color: var(--text); line-height: 1.5; }
+.container { max-width: 1200px; margin: 24px auto; padding: 16px; }
+.flex { display: flex; gap: 12px; }
+.wrap { flex-wrap: wrap; }
+.card { background: var(--card); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+.header { padding: 18px 20px; border-radius: 18px; margin-bottom: 16px; background: linear-gradient(135deg, rgba(79, 209, 197, 0.2), rgba(122, 162, 247, 0.1)); }
+h1, h2, h3, h4 { margin: 0 0 8px 0; }
+.grid { display: grid; gap: 14px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1.2fr 0.8fr 0.8fr; }
+.section { padding: 16px; }
+label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+input, select, button, textarea { font: inherit; }
+input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); background: #0e1524; color: var(--text); outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+.btn { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); background: #0f172a; color: var(--text); cursor: pointer; transition: transform 0.04s ease, opacity 0.2s; }
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: 0; color: #07131b; }
+.btn.ghost { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.15); }
+.btn.danger { background: linear-gradient(135deg, #ef4444, #f97316); border: 0; }
+.btn.ok { background: linear-gradient(135deg, #22c55e, #10b981); border: 0; }
+.btn.waiting { background: linear-gradient(135deg, var(--waiting), #f97316); border: 0; }
+.btn.in-service { background: linear-gradient(135deg, var(--in-service), #a78bfa); border: 0; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: rgba(122, 162, 247, 0.15); color: #c7d2fe; font-size: 12px; border: 1px solid rgba(122, 162, 247, 0.3); }
+.badge.waiting { background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge.in-service { background: rgba(139, 92, 246, 0.15); color: #ddd6fe; border: 1px solid rgba(139, 92, 246, 0.3); }
+.badge.done { background: rgba(34, 197, 94, 0.15); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.3); }
+table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+th, td { padding: 10px 12px; text-align: left; }
+thead th { font-size: 12px; color: var(--muted); }
+tbody tr { background: #0e1524; }
+tbody tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+tbody tr td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.08); background: #0b1220; color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.preview { white-space: pre-wrap; background: #0b1220; border-radius: 12px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.08); }
+.status-panel { margin-top: 16px; padding: 16px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1); }
+.customer-status { display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; background: #0b1220; border-radius: 12px; border-left: 4px solid var(--muted); }
+.customer-status.waiting { border-left-color: var(--waiting); }
+.customer-status.in-service { border-left-color: var(--in-service); }
+.public-view { background: #1e293b; border-radius: 12px; padding: 16px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header card">
+      <h1>Salon Appointment Tracker</h1>
+      <div class="muted" style="margin-top:6px">Track customer arrivals and show current status to waiting customers</div>
+    </div>
+
+    <div class="grid grid-3">
+      <!-- New Appointment -->
+      <div class="card section">
+        <h3>New Appointment</h3>
+        <div class="grid">
+          <div>
+            <label>Date</label>
+            <input id="date" type="date" />
+          </div>
+          <div>
+            <label>Client name</label>
+            <input id="name" placeholder="e.g., Ramya" />
+          </div>
+          <div>
+            <label>Phone (with country code, digits only)</label>
+            <input id="phone" placeholder="e.g., 919876543210" />
+          </div>
+          <div>
+            <label>Start time</label>
+            <input id="time" type="time" />
+          </div>
+          <div>
+            <label>Duration (minutes)</label>
+            <input id="duration" type="number" min="5" value="30" />
+          </div>
+          <div>
+            <label>Service (free text)</label>
+            <input id="service" placeholder="e.g., Facial" />
+          </div>
+          <div class="flex wrap">
+            <button class="btn primary" onclick="addAppt(true)">Add Appointment</button>
+            <button class="btn ghost" onclick="clearForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Arrival (OWNER only) -->
+      <div class="card section">
+        <h3>Customer Arrival</h3>
+        <div class="note">Mark when customers arrive and complete services</div>
+        <div class="grid">
+          <div>
+            <label>Select Customer</label>
+            <select id="customerSelect">
+              <option value="">-- Select a customer --</option>
+            </select>
+          </div>
+          <div class="flex wrap">
+            <button class="btn waiting" onclick="markAsArrived()">Customer Arrived</button>
+            <button class="btn in-service" onclick="startService()">Start Service</button>
+            <button class="btn ok" onclick="completeService()">Service Completed</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Status (both) -->
+      <div class="card section">
+        <h3>Current Status</h3>
+        <div id="currentStatus" class="preview"> No active customers at the moment </div>
+        <div class="note" style="margin-top:8px"> This status is visible to customers checking your website </div>
+      </div>
+    </div>
+
+    <div class="card section" style="margin-top:16px">
+      <h3>Appointments</h3>
+      <div class="note">Click a row to select. Sorted by date & start time.</div>
+      <div style="overflow:auto;margin-top:8px">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Phone</th>
+              <th>Service</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+/* ========== Sync key and basic utilities (same as customer version) ========== */
+const LS_KEY = 'salon.appointments.v3';
+let appts = load();
+let selectedId = null;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e) { return []; }
+}
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(appts)); updateCustomerSelect(); }
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+function escapeHtml(str) {
+  return (str || '').replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]||c));
+}
+function formatTime(timeStr) { if (!timeStr) return 'N/A'; return timeStr; }
+function addMinutes(time, mins) {
+  const [h, m] = time.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m + mins, 0, 0);
+  return String(d.getHours()).padStart(2,'0') + ":" + String(d.getMinutes()).padStart(2,'0');
+}
+
+/* ========== Add appointment (owner or customer) ==========
+   ownerFlag = true when owner adds (we keep duration).
+   When a customer adds (ownerFlag=false), they should not set duration.
+================================================================== */
+function addAppt(ownerFlag = true) {
+  const date = document.getElementById('date').value;
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim().replace(/\D/g, '');
+  const time = document.getElementById('time').value;
+  const service = document.getElementById('service').value.trim();
+  let duration = 30;
+  if (ownerFlag) {
+    duration = parseInt(document.getElementById('duration').value, 10) || 30;
+  } else {
+    // For customer-created appts, duration is left null; owner sets later
+    duration = null;
+  }
+  if (!date || !name || !phone || !time) { alert('Please fill in date, name, phone, and time fields.'); return; }
+  const end = duration ? addMinutes(time, duration) : null;
+  const obj = { id: uid(), date, name, phone, time, duration, end, service, status: 'scheduled', arrivalTime: null, serviceStartTime: null, serviceEndTime: null };
+  appts.push(obj);
+  sortAppts();
+  save();
+  clearForm();
+  render();
+
+  // If a customer added (ownerFlag === false), send SMS to owner via backend
+  if (!ownerFlag) {
+    // call local backend endpoint to send SMS (Node/Express/Twilio)
+    // Change /send-sms to your deployed server if needed
+    const smsPayload = {
+      to: '+17374203041', // owner number required by you
+      message: `This person has booked ${service || 'a service'} at ${time}.`
+    };
+    fetch('/send-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(smsPayload)
+    }).then(res => {
+      if (!res.ok) console.warn('SMS send failed (status ' + res.status + '). Make sure server is running and configured.');
+    }).catch(err => {
+      console.warn('Failed to call SMS endpoint:', err);
+    });
+  }
+}
+
+function clearForm() { ['date','name','phone','time','duration','service'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); document.getElementById('duration').value = '30'; }
+
+function sortAppts() { appts.sort((a,b) => (a.date + (a.time||'')).localeCompare(b.date + (b.time||''))); }
+
+/* ========== Render table & actions (OWNER view keeps Notify) ========== */
+function render() {
+  sortAppts();
+  const tbody = document.getElementById('rows');
+  tbody.innerHTML = '';
+  appts.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    tr.style.outline = (a.id === selectedId) ? '2px solid var(--accent)' : 'none';
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => { selectedId = a.id === selectedId ? null : a.id; updateSelectionUI(); render(); };
+    let statusBadge = '<span class="badge">Scheduled</span>';
+    if (a.status === 'waiting') statusBadge = '<span class="badge waiting">Waiting</span>';
+    if (a.status === 'in-service') statusBadge = '<span class="badge in-service">In Service</span>';
+    if (a.status === 'completed') statusBadge = '<span class="badge done">Completed</span>';
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${a.date}</td>
+      <td>${escapeHtml(a.name)}</td>
+      <td>+${a.phone}</td>
+      <td>${escapeHtml(a.service || '—')}</td>
+      <td>${a.time}</td>
+      <td>${statusBadge}</td>
+      <td class="row-actions">
+        <button class="btn" onclick="event.stopPropagation(); notifyCustomer('${a.id}')">Notify</button>
+        <button class="btn danger" onclick="event.stopPropagation(); del('${a.id}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateSelectionUI();
+  updateStatusPanel();
+}
+
+/* ========== Owner-only arrival/service controls ========= */
+function updateCustomerSelect() {
+  const select = document.getElementById('customerSelect');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Select a customer --</option>';
+  const today = new Date().toISOString().slice(0,10);
+  const todayAppts = appts.filter(a => a.date === today && a.status !== 'completed');
+  todayAppts.forEach(a => {
+    const option = document.createElement('option');
+    option.value = a.id;
+    option.textContent = `${a.name} (${a.time} - ${a.service || 'Service'})`;
+    select.appendChild(option);
+  });
+}
+function getSelectedCustomerId() { return document.getElementById('customerSelect').value; }
+
+function markAsArrived() {
+  const id = getSelectedCustomerId();
+  if (!id) return alert('Please select a customer first');
+  const appointment = appts.find(a => a.id === id); if (!appointment) return;
+  appointment.status = 'waiting';
+  appointment.arrivalTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  save(); render(); alert(`${appointment.name} marked as arrived at ${appointment.arrivalTime}`);
+}
+function startService() {
+  const id = getSelectedCustomerId(); if (!id) return alert('Please select a customer first');
+  const appointment = appts.find(a => a.id === id); if (!appointment) return;
+  if (appointment.status !== 'waiting') return alert('Customer must be in "waiting" status before starting service');
+  appointment.status = 'in-service';
+  appointment.serviceStartTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  // set end if duration exists
+  if (appointment.duration) { appointment.end = addMinutes(appointment.serviceStartTime, appointment.duration); }
+  save(); render(); alert(`Started service for ${appointment.name} at ${appointment.serviceStartTime}`);
+}
+function completeService() {
+  const id = getSelectedCustomerId(); if (!id) return alert('Please select a customer first');
+  const appointment = appts.find(a => a.id === id); if (!appointment) return;
+  if (appointment.status !== 'in-service') return alert('Customer must be in "in-service" status before completing');
+  appointment.status = 'completed';
+  appointment.serviceEndTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  save(); render();
+  const waitingCustomers = appts.filter(a => a.status === 'waiting');
+  if (waitingCustomers.length > 0) {
+    const nextCustomer = waitingCustomers[0];
+    alert(`Service completed for ${appointment.name}. Next customer: ${nextCustomer.name}`);
+    console.log(`Ready for next customer: ${nextCustomer.name}`);
+  } else {
+    alert(`Service completed for ${appointment.name}. No waiting customers.`);
+  }
+}
+
+/* ========== Notify (OWNER) - open WhatsApp and also include link to customer view ========= */
+function notifyCustomer(id) {
+  const appointment = appts.find(a => a.id === id); if (!appointment) return;
+  let message = '';
+  if (appointment.status === 'scheduled') {
+    message = `Hi ${appointment.name}, this is a reminder of your appointment today at ${appointment.time} for ${appointment.service || 'service'}.`;
+  } else if (appointment.status === 'waiting') {
+    message = `Hi ${appointment.name}, we'll be ready for you shortly. Thank you for your patience.`;
+  } else if (appointment.status === 'in-service') {
+    message = `Hi ${appointment.name}, we hope you're enjoying your ${appointment.service || 'service'}.`;
+  } else {
+    message = `Hi ${appointment.name}, thank you for visiting us today!`;
+  }
+
+  // Add link to customer view (assumes customer.html in same folder)
+  const customerViewLink = `${location.origin}${location.pathname.replace(/[^\/]*$/, '')}customer.html`;
+  message += `\n\nCheck current status here: ${customerViewLink}`;
+
+  // Open WhatsApp with pre-filled message
+  window.open(`https://wa.me/${appointment.phone}?text=${encodeURIComponent(message)}`, '_blank');
+}
+
+/* ========== Delete ========= */
+function del(id) {
+  appts = appts.filter(a => a.id !== id);
+  save();
+  if (selectedId === id) selectedId = null;
+  render();
+}
+
+/* ========== Status panel ========== */
+function updateStatusPanel() {
+  const statusEl = document.getElementById('currentStatus');
+  const waitingCustomers = appts.filter(a => a.status === 'waiting');
+  const inServiceCustomers = appts.filter(a => a.status === 'in-service');
+  if (inServiceCustomers.length === 0 && waitingCustomers.length === 0) {
+    statusEl.innerHTML = 'No active customers at the moment'; return;
+  }
+  let html = '';
+  if (inServiceCustomers.length > 0) {
+    html += '<div class="badge in-service" style="margin-bottom:8px">Currently With Stylist</div>';
+    inServiceCustomers.forEach(c => { html += `<div>${c.name} (${c.service || 'Service'}) - Started at ${formatTime(c.serviceStartTime)}</div>`; });
+  }
+  if (waitingCustomers.length > 0) {
+    html += '<div class="badge waiting" style="margin:16px 0 8px 0">Waiting Customers</div>';
+    waitingCustomers.forEach(c => { html += `<div>${c.name} (${c.service || 'Service'}) - Arrived at ${formatTime(c.arrivalTime)}</div>`; });
+  }
+  statusEl.innerHTML = html;
+}
+
+function updateSelectionUI() { /* reserved */ }
+
+/* ========== Customer-select initialized on load and initial render ========= */
+render();
+updateCustomerSelect();
+
+/* Expose addAppt for customer-mode calls from customer.html if desired */
+  </script>
+</body>
+</html>
